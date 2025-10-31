@@ -4,6 +4,10 @@ from pprint import pprint
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
 from time import sleep
 import re
 
@@ -32,7 +36,7 @@ def parse_rss(rss_url):
     for item in all_items:
         pubdate = item.find('pubDate').text
         title = item.find('title').text
-        description = item.find('pubDate').text
+        description = item.find('description').text
         
         guid_tag = item.find('guid')
         link_tag = item.find('link')
@@ -85,22 +89,35 @@ def filter_articles_by_full_text(articles_data, keywords):
     result = dict()
      
     for article in articles_data[:3]:
-         link = article[3]
-         driver.get(link)
+        link = article[3]
+        art_id = articles_data[4]
          
-         sleep(5)
-         
-         article_body_selector = '.article-formatted-body'
-         article_element = driver.find_element(By.CSS_SELECTOR, article_body_selector)
-         full_text = article_element.text
-         
-         for key in keywords:
-             pattern = r'\b' + key + r'\b'
-             match = re.search(pattern, full_text, re.IGNORECASE)
-             
-             if match:
-                 result[key] = article
-                 break
+        try:
+            driver.get(link)
+            
+            #sleep(5)
+            wait = WebDriverWait(driver, 10)
+            
+            article_body_selector = '.article-formatted-body'
+            # article_element = driver.find_element(By.CSS_SELECTOR, article_body_selector)
+            
+            article_element = wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, article_body_selector))
+            )
+            
+            full_text = article_element.text
+            
+            for key in keywords:
+                pattern = r'\b' + key + r'\b'
+                match = re.search(pattern, full_text, re.IGNORECASE)
+                
+                if match:
+                    result[art_id] = article
+                    break
+                
+        except:
+            pass
+    
      
     return result
 
@@ -125,7 +142,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-## добавить requirements.txt 
-## и сделать доп задание
